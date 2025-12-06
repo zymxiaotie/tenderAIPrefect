@@ -66,7 +66,7 @@ def llm_chat(provider: LLMProvider, client, model: str, messages: List[dict], ma
 
 @task(retries=2, retry_delay_seconds=10)
 def download_pdf(file_id: str, file_name: str) -> Path:
-    creds = service_account.Credentials.from_service_account_file(config.GOOGLE_CREDENTIALS_FILE)
+    creds = service_account.Credentials.from_service_account_file(config.GOOGLE_CREDENTIALS_FILE, scopes=["https://www.googleapis.com/auth/drive.readonly"])
     service = build("drive", "v3", credentials=creds)
     path = Path("downloads") / file_name
     path.parent.mkdir(exist_ok=True)
@@ -106,6 +106,63 @@ def extract_criteria(text: str) -> List[QSCriterion]:
             uniq.append(c)
     return uniq
 
+@task
+def infer_is_met(criteria: List[QSCriterion], tender_id: int):
+    with get_db() as conn:
+        cur = conn.cursor()
+        for c in criteria:
+            # GIN first
+            cur.execute(
+                "SELECT is_met, notes FROM company_knowledge "
+                "WHERE search_text @@ plainto_tsquery('english', %s) "
+                "ORDER BY ts_rank(search_text, plainto_tsquery('english', %s)) DESC LIMIT 1",
+                (c.extracted_clause, c.extracted_clause)
+            )
+            match = cur.fetchone()
+            if match:
+                is_met = match[0]
+                notes = match[1]
+            else:
+                # LLM backup
+                messages = [{"role": "user", "content": f"Does the company meet this criterion: {c.extracted_clause}? Company knowledge: [all knowledge descriptions]"}]
+                raw = llm_chat(config.LLM_PROVIDER, llm_client, config.LLM_MODEL, messages, 200)
+                is_met = 'yes' in raw.lower()
+                notes = raw[:500]
+
+            # Save
+            cur.execute(
+                "UPDATE tender_qualification_criteria SET is_met=%s, notes=%s "
+                "WHERE tender_id=%s AND tag_id=(SELECT tag_id FROM criteria_register WHERE tag_name=%s)",
+                (is_met, notes, tender_id, c.tag_name)
+            )
+        conn.commit()
+
+@task
+def justify_criteria(tender_id: int):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT tqc.raw_text, tqc.is_met, tqc.notes FROM tender_qualification_criteria tqc WHERE tender_id=%s",
+            (tender_id,)
+        )
+        rows = cur.fetchall()
+        for raw, is_met, notes in rows:
+            messages = [{"role": "user", "content": f"Criterion: {raw}. Met: {is_met}. Notes: {notes}. Justify in 2-4 sentences, and list actions if needed."}]
+            raw_just = llm_chat(config.LLM_PROVIDER, llm_client, config.LLM_MODEL, messages, 300)
+            try:
+                just = json.loads(raw_just)
+                justification = just["justification"]
+                actions = json.dumps(just["actions"])
+            except:
+                justification = raw_just
+                actions = "[]"
+            cur.execute(
+                "UPDATE tender_qualification_criteria SET justification=%s, actions=%s "
+                "WHERE tender_id=%s AND raw_text=%s",
+                (justification, actions, tender_id, raw)
+            )
+        conn.commit()
+
 @flow
 def process_tender(file_id: str, file_name: str, file_hash: str):
     with get_db() as conn:
@@ -130,32 +187,8 @@ def process_tender(file_id: str, file_name: str, file_hash: str):
     pdf_path = download_pdf(file_id, file_name)
     text = extract_text(pdf_path)
     criteria = extract_criteria(text)
-
-    with get_db() as conn:
-        cur = conn.cursor()
-        for c in criteria:
-            cur.execute("SELECT tag_id FROM criteria_register WHERE tag_name=%s", (c.tag_name,))
-            row = cur.fetchone()
-            if not row:
-                cur.execute(
-                    "INSERT INTO criteria_register (tag_name, category, description, example) VALUES (%s,%s,%s,%s) RETURNING tag_id",
-                    (c.tag_name, c.category, c.qs_reason[:500], c.extracted_clause[:200])
-                )
-                tag_id = cur.fetchone()[0]
-            else:
-                tag_id = row[0]
-            cur.execute(
-                "INSERT INTO tender_qualification_criteria (tender_id, tag_id, raw_text, normalized_text, confidence_score) "
-                "VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
-                (tender_id, tag_id, c.extracted_clause[:500], c.sticker_tag, c.confidence)
-            )
-            cur.execute("SELECT is_met FROM company_knowledge WHERE tag_name=%s", (c.tag_name,))
-            comp = cur.fetchone()
-            is_met = comp[0] if comp else False
-            cur.execute(
-                "UPDATE tender_qualification_criteria SET is_met=%s WHERE tender_id=%s AND tag_id=%s",
-                (is_met, tender_id, tag_id)
-            )
+    infer_is_met(criteria, tender_id)
+    justify_criteria(tender_id)
 
     context = build_context(tender_id)
     html = env.get_template("report.html").render(**context)
@@ -168,9 +201,8 @@ def process_tender(file_id: str, file_name: str, file_hash: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--local-pdf", type=str, help="Run with local PDF")
+    parser.add_argument("--local-pdf", type=str)
     args = parser.parse_args()
-
     if args.local_pdf:
         path = Path(args.local_pdf)
         file_hash = hashlib.sha256(path.read_bytes()).hexdigest()

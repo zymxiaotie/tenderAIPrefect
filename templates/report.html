@@ -364,8 +364,10 @@
         }
         .reasoning-text p {
             margin-bottom: 12px;
+            margin-top: 0;
             line-height: 1.8;
             color: #374151;
+            text-align: left;
         }
         .reasoning-text strong {
             color: #1e40af;
@@ -419,9 +421,10 @@
             <div class="section" data-section="1">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Executive Summary</span>
+                        <span class="section-icon">📊</span>
+                        SECTION 1: Executive Summary
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     <div class="stats-grid">
@@ -443,9 +446,11 @@
                     </div>
                     <div class="alert alert-info">
                         <strong>How We Calculate This:</strong><br>
-                        • <strong>Completeness</strong>: {{ stats.completeness }}% = (Documents Received / Total Documents) × 100%<br>
-                        • <strong>Mandatory Criteria</strong>: {{ stats.mandatory_met }}% of critical requirements met<br>
-                        • <strong>Important Criteria</strong>: {{ stats.important_met }}% of competitive requirements met
+                        • <strong>Completeness</strong>: {{ stats.completeness }}% = (Documents Received / Total Documents in Tender Package) × 100%<br>
+                        &nbsp;&nbsp;&nbsp;→ Measures if you have the complete tender package provided by client<br>
+                        &nbsp;&nbsp;&nbsp;→ Total documents in package: All docs client issued (mandatory + optional)<br>
+                        • <strong>Mandatory Criteria</strong>: 100% of critical requirements met (license, certifications, compliance)<br>
+                        • <strong>Important Criteria</strong>: 100% of competitive requirements met (experience, financials)
                     </div>
                     <p style="color: #6b7280; margin-top: 15px;">
                         {{ summary_text }}
@@ -457,9 +462,10 @@
             <div class="section" data-section="2">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Tender Overview (Key Data Sheet)</span>
+                        <span class="section-icon">📋</span>
+                        SECTION 2: Tender Overview (Key Data Sheet)
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     <h3 style="color: #1e40af; margin-bottom: 10px;">Basic Information</h3>
@@ -492,18 +498,19 @@
             <div class="section" data-section="3">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Eligibility Status (Risks & Readiness)</span>
+                        <span class="section-icon">✅</span>
+                        SECTION 3: Eligibility Status (Risks & Readiness)
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     {% if eligibility_status == 'eligible' %}
                     <div class="alert alert-success">
-                        <strong>SUCCESS: Company meets all mandatory requirements and is eligible to bid.</strong>
+                        <strong>✅ SUCCESS: Company meets all mandatory requirements and is eligible to bid.</strong>
                     </div>
                     {% else %}
                     <div class="alert alert-danger">
-                        <strong>FAILED: Company does not meet mandatory requirements. Bid not eligible.</strong>
+                        <strong>❌ FAILED: Company does not meet mandatory requirements. Bid not eligible.</strong>
                     </div>
                     {% endif %}
                     
@@ -535,8 +542,8 @@
                                         <div class="tooltip-text">{{ item.full_clause }}</div>
                                     </div>
                                 </td>
-                                <td><span class="severity-{{ item.severity.lower() }}"><strong>{{ item.severity }}</strong></span></td>
-                                <td><span class="status-badge status-{{ item.status.lower().replace(' ', '-') }}">{% if item.status == 'MET' %}MET{% else %}NOT MET{% endif %}</span></td>
+                                <td><span class="severity-{{ item.severity.lower() }}"><strong>{{ item.severity | upper }}</strong></span></td>
+                                <td><span class="status-badge status-{{ item.status.lower().replace(' ', '-') }}">{% if item.status == 'met' %}✓ MET{% else %}✗ NOT MET{% endif %}</span></td>
                                 <td>
                                     <div class="tooltip-container">
                                         <span style="display: inline-block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -557,23 +564,25 @@
             <div class="section" data-section="4">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Document Receipt Check</span>
+                        <span class="section-icon">📁</span>
+                        SECTION 4: Document Receipt Check
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     <div class="alert alert-info">
-                        <strong>What This Section Checks:</strong><br>
-                        This section compares the documents <strong>listed in the tender PDF</strong> against the documents <strong>we have actually received</strong>.<br><br>
+                        <strong>📋 What This Section Checks:</strong><br>
+                        This section compares the documents <strong>listed in the tender PDF</strong> (what the client said they would provide) 
+                        against the documents <strong>we have actually received</strong>.<br><br>
                         <strong>Total documents listed in tender:</strong> {{ docs.total }}<br>
                         <strong>Documents received:</strong> {{ docs.received }}<br>
                         <strong>Documents not yet received:</strong> {{ docs.missing }}<br><br>
-                        <em>Note: This check is independent of submission status.</em>
+                        <em>Note: This check is independent of submission status. It only verifies document receipt from the client.</em>
                     </div>
-
+    
                     {% if docs.missing > 0 %}
                     <div class="alert alert-warning">
-                        <strong>Warning: {{ docs.missing }} mandatory document(s) from tender package not yet received.</strong>
+                        <strong>⚠️ {{ docs.missing }} mandatory document(s) from tender package not yet received.</strong>
                     </div>
                     {% endif %}
 
@@ -593,9 +602,7 @@
                                 <td>{{ doc.name }}</td>
                                 <td>{{ doc.category }}</td>
                                 <td>{{ 'Yes' if doc.mandatory else 'No' }}</td>
-                                <td><span class="status-badge status-{{ 'received' if doc.status == 'received' else 'missing' }}">
-                                    {% if doc.status == 'received' %}Received{% else %}Not Received{% endif %}
-                                </span></td>
+                                <td><span class="status-badge status-{{ doc.status }}">{{ doc.status | capitalize }}</span></td>
                                 <td>
                                     <div class="tooltip-container">
                                         <span style="display: inline-block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -615,18 +622,19 @@
             <div class="section" data-section="5">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Addenda Impact Tracker</span>
+                        <span class="section-icon">📝</span>
+                        SECTION 5: Addenda Impact Tracker
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     {% if addenda|length == 0 %}
                     <div class="alert alert-success">
-                        No addenda issued for this tender. Original tender documents remain current.
+                        ✅ No addenda issued for this tender. Original tender documents remain current.
                     </div>
                     {% else %}
                     <div class="alert alert-warning">
-                        <strong>Addenda issued:</strong> {{ addenda|length }} document(s)
+                        <strong>⚠️ Addenda issued:</strong> {{ addenda|length }} document(s)
                     </div>
                     <ul>
                         {% for a in addenda %}
@@ -641,20 +649,21 @@
             <div class="section" data-section="6">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Action Items & Next Steps</span>
+                        <span class="section-icon">🎯</span>
+                        SECTION 6: Action Items & Next Steps
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     {% if action_items|length > 0 %}
                     <div style="margin-bottom: 30px;">
                         <h3 style="color: #1e40af; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
-                            QS Chase Requests & Manual Validation Required
+                            📋 QS Chase Requests & Manual Validation Required
                         </h3>
                         {% for item in action_items %}
                         <div class="action-item priority-{{ item.priority }}" style="margin-bottom: 20px;">
                             <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                                <span style="font-size: 20px; margin-right: 10px;">{% if item.priority == 'urgent' %}Red Circle{% elif item.priority == 'high' %}Orange Circle{% else %}Blue Circle{% endif %}</span>
+                                <span style="font-size: 20px; margin-right: 10px;">{% if item.priority == 'urgent' %}🔴{% elif item.priority == 'high' %}🟠{% else %}🔵{% endif %}</span>
                                 <div>
                                     <strong style="font-size: 15px; color: #1e40af;">{{ item.title }}</strong>
                                     <span style="margin-left: 10px; padding: 3px 8px; background: #e0e7ff; color: #3730a3; border-radius: 12px; font-size: 11px; font-weight: 600;">{{ item.type }}</span>
@@ -672,8 +681,8 @@
                                 </div>
                                 {% endif %}
                                 <div style="padding: 10px; background: #eff6ff; border-radius: 4px; margin-top: 10px; font-size: 12px;">
-                                    <strong>Owner:</strong> {{ item.owner }}<br>
-                                    <strong>System Action:</strong> {{ item.system_action }}
+                                    <strong>👤 Owner:</strong> {{ item.owner }}<br>
+                                    <strong>🤖 System Action:</strong> {{ item.system_action }}
                                 </div>
                             </div>
                         </div>
@@ -682,12 +691,12 @@
                     {% endif %}
 
                     <div class="alert alert-info" style="margin-top: 20px;">
-                        <strong>How the System Helps:</strong><br>
+                        <strong>📊 How the System Helps:</strong><br>
                         • Automated email alerts sent to responsible teams<br>
                         • Daily progress tracking and status updates<br>
                         • Document upload notifications<br>
                         • Deadline reminders at 7 days, 3 days, and 1 day before submission<br>
-                        • Management dashboard shows real-time tender readiness
+                        • Management dashboard shows real-time tender readiness across all tenders
                     </div>
                 </div>
             </div>
@@ -696,9 +705,10 @@
             <div class="section" data-section="7">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="section-icon">Detailed Analysis & Reasoning</span>
+                        <span class="section-icon">📄</span>
+                        SECTION 7: Detailed Analysis & Reasoning
                     </div>
-                    <span class="toggle-icon">Down Arrow</span>
+                    <span class="toggle-icon">▼</span>
                 </div>
                 <div class="section-content">
                     <div class="reasoning-text">
@@ -707,80 +717,7 @@
                     
                     {% if important_criteria_validation_required %}
                     <div class="alert alert-warning" style="margin-top: 20px;">
-                        <strong>Manual Validation Required:</strong><br>
+                        <strong>✅ Manual Validation Required:</strong><br>
                         <p style="margin: 8px 0 0 0; color: #78350f; font-size: 14px;">
-                            All <strong>IMPORTANT</strong> criteria require stakeholders' manual validation/approval before proceeding with the bid.
-                        </p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-    
-        </div>
-
-        <!-- Controls -->
-        <div class="controls">
-            <button class="btn btn-primary" onclick="expandAll()">Expand All Sections</button>
-            <button class="btn btn-secondary" onclick="collapseAll()">Collapse All Sections</button>
-            <button class="btn btn-secondary" onclick="window.print()">Print Report</button>
-        </div>
-    </div>
-
-    <script>
-        document.querySelectorAll('.section-header').forEach(header => {
-            header.addEventListener('click', () => {
-                header.parentElement.classList.toggle('collapsed');
-            });
-        });
-
-        function expandAll() {
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('collapsed');
-            });
-        }
-
-        function collapseAll() {
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('collapsed');
-            });
-        }
-
-        document.querySelectorAll('.tooltip-container').forEach(container => {
-            const tooltip = container.querySelector('.tooltip-text');
-            if (!tooltip) return;
-            let showTimeout, hideTimeout;
-            container.addEventListener('mouseenter', e => {
-                clearTimeout(hideTimeout);
-                showTimeout = setTimeout(() => {
-                    positionTooltip(container, tooltip, e);
-                    tooltip.classList.add('show');
-                }, 100);
-            });
-            container.addEventListener('mouseleave', () => {
-                clearTimeout(showTimeout);
-                hideTimeout = setTimeout(() => tooltip.classList.remove('show'), 100);
-            });
-            container.addEventListener('mousemove', e => {
-                if (tooltip.classList.contains('show')) {
-                    positionTooltip(container, tooltip, e);
-                }
-            });
-        });
-
-        function positionTooltip(container, tooltip, event) {
-            const rect = container.getBoundingClientRect();
-            const tooltipWidth = 500;
-            const tooltipHeight = Math.min(tooltip.scrollHeight + 24, 400);
-            const padding = 10;
-            let left = event.clientX - tooltipWidth / 2;
-            let top = rect.top - tooltipHeight - padding;
-            if (left < padding) left = padding;
-            if (left + tooltipWidth > window.innerWidth - padding) left = window.innerWidth - tooltipWidth - padding;
-            if (top < padding) top = rect.bottom + padding;
-            if (top + tooltipHeight > window.innerHeight - padding) top = window.innerHeight - tooltipHeight - padding;
-            tooltip.style.left = left + 'px';
-            tooltip.style.top = top + 'px';
-        }
-    </script>
-</body>
-</html>
+                            All <strong>IMPORTANT</strong> criteria require stakeholders' manual validation/approval before proceeding with the bid. 
+                            This ensures proper risk assessment and management decision-making for criteria that affect competitiveness

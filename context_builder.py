@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Dict
 from utils.db import get_db
+import json
 
 def build_context(tender_id: int) -> Dict:
     context = {
@@ -24,23 +25,31 @@ def build_context(tender_id: int) -> Dict:
             context.update({"title": row[0], "reference": row[1]})
 
         cur.execute(
-            "SELECT cr.tag_name, cr.category, tqc.raw_text, tqc.confidence_score, tqc.is_met, tqc.notes "
+            "SELECT cr.tag_name, cr.category, tqc.raw_text, tqc.confidence_score, tqc.is_met, tqc.notes, tqc.justification, tqc.actions "
             "FROM tender_qualification_criteria tqc JOIN criteria_register cr ON tqc.tag_id=cr.tag_id "
             "WHERE tqc.tender_id=%s", (tender_id,)
         )
         rows = cur.fetchall()
         items = []
         met = 0
-        for tag, cat, raw, conf, is_met, notes in rows:
-            items.append({
+        actions = []
+        reasoning_parts = []
+        for tag, cat, raw, conf, is_met, notes, justification, action_str in rows:
+            item = {
                 "requirement": tag.replace("_", " ").title(),
                 "full_clause": raw,
                 "severity": "mandatory" if cat in ["License", "Certification"] else "important" if cat in ["Financial", "Experience"] else "optional",
                 "status": "met" if is_met else "not-met",
                 "notes": notes or f"Confidence: {conf:.0%}",
                 "source": "original"
-            })
+            }
+            items.append(item)
             if is_met: met += 1
+            reasoning_parts.append(justification or "")
+            if action_str:
+                item_actions = json.loads(action_str)
+                actions.extend(item_actions)
+
         context["eligibility_items"] = items
         context["stats"] = {"met_criteria": met, "total_criteria": len(items)}
         context["recommendation"] = {
@@ -49,5 +58,7 @@ def build_context(tender_id: int) -> Dict:
             "text": "RECOMMENDED TO BID" if met == len(items) else "DO NOT BID"
         }
         context["summary_text"] = f"The bidder meets {met}/{len(items)} qualification criteria."
+        context["action_items"] = actions
+        context["reasoning_text"] = "\n\n".join(reasoning_parts)
 
     return context
