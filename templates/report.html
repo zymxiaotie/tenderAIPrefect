@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tender Report - {{ reference }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .email-header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 30px;
+        }
+        .email-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .email-meta {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .section:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+        .section-header {
+            background: linear-gradient(to right, #f9fafb 0%, #f3f4f6 100%);
+            padding: 18px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .section-header:hover {
+            background: linear-gradient(to right, #eff6ff 0%, #dbeafe 100%);
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-icon {
+            font-size: 20px;
+        }
+        .toggle-icon {
+            font-size: 20px;
+            color: #6b7280;
+            transition: transform 0.3s ease;
+        }
+        .section.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+        .section-content {
+            padding: 25px;
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+        }
+        .section.collapsed .section-content {
+            max-height: 0;
+            padding: 0 25px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e40af;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        .recommendation-box {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .rec-disqualified {
+            background: #fecaca;
+            border: 3px solid #dc2626;
+            color: #7f1d1d;
+        }
+        .rec-not-recommend {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            color: #991b1b;
+        }
+        .rec-conditional {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            color: #92400e;
+        }
+        .rec-recommend {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+        .rec-strongly-recommend {
+            background: #bbf7d0;
+            border: 3px solid #059669;
+            color: #064e3b;
+        }
+        .info-table {
+            width: 100%;
+            margin: 15px 0;
+            table-layout: fixed;
+        }
+        .info-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .info-table td:first-child {
+            font-weight: 600;
+            color: #4b5563;
+            width: 200px;
+        }
+        .deadline-urgent {
+            color: #dc2626;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table.data-table th {
+            background: #2563eb;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        table.data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 0;
+        }
+        table.data-table td:nth-child(1) { max-width: 350px; min-width: 250px; }
+        table.data-table td:nth-child(2) { max-width: 120px; min-width: 100px; }
+        table.data-table td:nth-child(3) { max-width: 100px; min-width: 80px; }
+        table.data-table td:nth-child(4) { max-width: 250px; min-width: 200px; }
+        table.data-table td:nth-child(5) { max-width: 100px; min-width: 80px; }
+        table.data-table tr:hover {
+            background: #f9fafb;
+        }
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            cursor: help;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: left;
+            padding: 12px 16px;
+            border-radius: 8px;
+            position: fixed;
+            z-index: 99999;
+            white-space: normal;
+            width: 500px;
+            max-width: 90vw;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            font-size: 13px;
+            line-height: 1.7;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            pointer-events: none;
+            border: 2px solid #475569;
+        }
+        .tooltip-text::-webkit-scrollbar { width: 8px; }
+        .tooltip-text::-webkit-scrollbar-track { background: #334155; border-radius: 4px; }
+        .tooltip-text::-webkit-scrollbar-thumb { background: #64748b; border-radius: 4px; }
+        .tooltip-text::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tooltip-text.show {
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-met { background: #d1fae5; color: #065f46; }
+        .status-not-met { background: #fee2e2; color: #991b1b; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-received { background: #d1fae5; color: #065f46; }
+        .status-missing { background: #fee2e2; color: #991b1b; }
+        .severity-mandatory { 
+            background: #fecaca; 
+            color: #7f1d1d;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .severity-important { 
+            background: #fed7aa; 
+            color: #7c2d12;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .severity-optional { 
+            background: #e0e7ff; 
+            color: #3730a3;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .badge-addendum {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        .alert-warning {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        .alert-danger {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        .alert-success {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        .alert-info {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .action-item {
+            background: #f9fafb;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        .priority-urgent { border-left-color: #dc2626; background: #fef2f2; }
+        .priority-critical { border-left-color: #ef4444; background: #fef2f2; }
+        .priority-high { border-left-color: #f59e0b; background: #fefce8; }
+        .priority-medium { border-left-color: #3b82f6; background: #eff6ff; }
+        .priority-low { border-left-color: #6b7280; }
+        .addendum-box {
+            background: #fef9e7;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+        .controls {
+            background: #f3f4f6;
+            padding: 15px 30px;
+            display: flex;
+            gap: 10px;
+            border-top: 2px solid #e5e7eb;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1e40af;
+        }
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 2px solid #d1d5db;
+        }
+        .btn-secondary:hover {
+            background: #f9fafb;
+        }
+        .reasoning-text {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            margin: 15px 0;
+            line-height: 1.8;
+        }
+        .reasoning-text p {
+            margin-bottom: 12px;
+            line-height: 1.8;
+            color: #374151;
+        }
+        .reasoning-text strong {
+            color: #1e40af;
+            font-weight: 700;
+        }
+        .reasoning-text em {
+            font-style: italic;
+            color: #4b5563;
+        }
+        .reasoning-text ul, .reasoning-text ol {
+            margin: 15px 0 15px 25px;
+            padding-left: 20px;
+        }
+        .reasoning-text ul {
+            list-style-type: disc;
+        }
+        .reasoning-text ol {
+            list-style-type: decimal;
+        }
+        .reasoning-text li {
+            margin-bottom: 8px;
+            line-height: 1.7;
+            color: #374151;
+        }
+        .reasoning-text li strong {
+            color: #1e40af;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; }
+            .controls { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Email Header -->
+        <div class="email-header">
+            <h1>Tender Alert: {{ reference }} - {{ title }}</h1>
+            <div class="email-meta">
+                <div>From: Tender Intelligence Assistant</div>
+                <div>To: {{ email_to | join(', ') }}</div>
+                <div>Date: {{ generated_at }}</div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            
+            <!-- Section 1: Executive Summary -->
+            <div class="section" data-section="1">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Executive Summary</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ stats.met_criteria }}/{{ stats.total_criteria }}</div>
+                            <div class="stat-label">Requirements Met</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ stats.received_docs }}/{{ stats.total_docs }}</div>
+                            <div class="stat-label">Documents Received</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ stats.days_to_deadline }}</div>
+                            <div class="stat-label">Days Until Deadline</div>
+                        </div>
+                    </div>
+                    <div class="recommendation-box {{ recommendation.class }}">
+                        {{ recommendation.icon }} {{ recommendation.text }}
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>How We Calculate This:</strong><br>
+                        • <strong>Completeness</strong>: {{ stats.completeness }}% = (Documents Received / Total Documents) × 100%<br>
+                        • <strong>Mandatory Criteria</strong>: {{ stats.mandatory_met }}% of critical requirements met<br>
+                        • <strong>Important Criteria</strong>: {{ stats.important_met }}% of competitive requirements met
+                    </div>
+                    <p style="color: #6b7280; margin-top: 15px;">
+                        {{ summary_text }}
+                    </p>
+                </div>
+            </div>
+    
+            <!-- Section 2: Tender Overview -->
+            <div class="section" data-section="2">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Tender Overview (Key Data Sheet)</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    <h3 style="color: #1e40af; margin-bottom: 10px;">Basic Information</h3>
+                    <table class="info-table">
+                        <tr><td>Tender Title</td><td>{{ title }}</td></tr>
+                        <tr><td>Reference Number</td><td><strong>{{ reference }}</strong></td></tr>
+                        <tr><td>Issuing Authority</td><td>{{ issuing_authority }}</td></tr>
+                        <tr><td>Submission Deadline</td><td class="deadline-urgent">{{ submission_deadline }}</td></tr>
+                        <tr><td>Clarification Closing</td><td>{{ clarification_deadline }}</td></tr>
+                    </table>
+
+                    <h3 style="color: #1e40af; margin: 20px 0 10px;">Project Details</h3>
+                    <table class="info-table">
+                        <tr><td>Project Name</td><td>{{ project_name }}</td></tr>
+                        <tr><td>Site Location</td><td>{{ site_location }}</td></tr>
+                        <tr><td>Contract Type</td><td>{{ contract_type }}</td></tr>
+                    </table>
+
+                    <h3 style="color: #1e40af; margin: 20px 0 10px;">Contract Terms</h3>
+                    <table class="info-table">
+                        <tr><td>Liquidated Damages</td><td>{{ liquidated_damages }}</td></tr>
+                        <tr><td>Performance Bond</td><td>{{ performance_bond }}</td></tr>
+                        <tr><td>Retention</td><td>{{ retention }}</td></tr>
+                        <tr><td>Defects Liability Period</td><td>{{ defects_liability_period }}</td></tr>
+                    </table>
+                </div>
+            </div>
+    
+            <!-- Section 3: Eligibility Status -->
+            <div class="section" data-section="3">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Eligibility Status (Risks & Readiness)</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    {% if eligibility_status == 'eligible' %}
+                    <div class="alert alert-success">
+                        <strong>SUCCESS: Company meets all mandatory requirements and is eligible to bid.</strong>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger">
+                        <strong>FAILED: Company does not meet mandatory requirements. Bid not eligible.</strong>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <strong>Understanding Criteria Severity:</strong><br>
+                        • <span class="severity-mandatory"><strong>MANDATORY</strong></span>: Legal/regulatory requirements. Failing = automatic disqualification<br>
+                        • <span class="severity-important"><strong>IMPORTANT</strong></span>: Competitive requirements. Can be negotiated<br>
+                        • <span class="severity-optional"><strong>OPTIONAL</strong></span>: Preferred but not critical
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Requirement</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in eligibility_items %}
+                            <tr>
+                                <td>
+                                    <div class="tooltip-container">
+                                        <span style="display: inline-block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            {{ item.requirement }}
+                                        </span>
+                                        <div class="tooltip-text">{{ item.full_clause }}</div>
+                                    </div>
+                                </td>
+                                <td><span class="severity-{{ item.severity.lower() }}"><strong>{{ item.severity }}</strong></span></td>
+                                <td><span class="status-badge status-{{ item.status.lower().replace(' ', '-') }}">{% if item.status == 'MET' %}MET{% else %}NOT MET{% endif %}</span></td>
+                                <td>
+                                    <div class="tooltip-container">
+                                        <span style="display: inline-block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            {{ item.notes[:100] }}{% if item.notes|length > 100 %}...{% endif %}
+                                        </span>
+                                        <div class="tooltip-text">{{ item.notes }}</div>
+                                    </div>
+                                </td>
+                                <td>{{ item.source }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    
+            <!-- Section 4: Document Register -->
+            <div class="section" data-section="4">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Document Receipt Check</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    <div class="alert alert-info">
+                        <strong>What This Section Checks:</strong><br>
+                        This section compares the documents <strong>listed in the tender PDF</strong> against the documents <strong>we have actually received</strong>.<br><br>
+                        <strong>Total documents listed in tender:</strong> {{ docs.total }}<br>
+                        <strong>Documents received:</strong> {{ docs.received }}<br>
+                        <strong>Documents not yet received:</strong> {{ docs.missing }}<br><br>
+                        <em>Note: This check is independent of submission status.</em>
+                    </div>
+
+                    {% if docs.missing > 0 %}
+                    <div class="alert alert-warning">
+                        <strong>Warning: {{ docs.missing }} mandatory document(s) from tender package not yet received.</strong>
+                    </div>
+                    {% endif %}
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Document Name</th>
+                                <th>Category</th>
+                                <th>Mandatory</th>
+                                <th>Receipt Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr {% if doc.status == 'missing' %}style="background: #fef2f2;"{% endif %}>
+                                <td>{{ doc.name }}</td>
+                                <td>{{ doc.category }}</td>
+                                <td>{{ 'Yes' if doc.mandatory else 'No' }}</td>
+                                <td><span class="status-badge status-{{ 'received' if doc.status == 'received' else 'missing' }}">
+                                    {% if doc.status == 'received' %}Received{% else %}Not Received{% endif %}
+                                </span></td>
+                                <td>
+                                    <div class="tooltip-container">
+                                        <span style="display: inline-block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            {{ doc.notes[:100] }}{% if doc.notes|length > 100 %}...{% endif %}
+                                        </span>
+                                        <div class="tooltip-text">{{ doc.notes }}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    
+            <!-- Section 5: Addenda Tracker -->
+            <div class="section" data-section="5">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Addenda Impact Tracker</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    {% if addenda|length == 0 %}
+                    <div class="alert alert-success">
+                        No addenda issued for this tender. Original tender documents remain current.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <strong>Addenda issued:</strong> {{ addenda|length }} document(s)
+                    </div>
+                    <ul>
+                        {% for a in addenda %}
+                        <li><strong>{{ a.date }}</strong>: {{ a.title }} ({{ a.impact }})</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+    
+            <!-- Section 6: Next Actions -->
+            <div class="section" data-section="6">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Action Items & Next Steps</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    {% if action_items|length > 0 %}
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #1e40af; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
+                            QS Chase Requests & Manual Validation Required
+                        </h3>
+                        {% for item in action_items %}
+                        <div class="action-item priority-{{ item.priority }}" style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 20px; margin-right: 10px;">{% if item.priority == 'urgent' %}Red Circle{% elif item.priority == 'high' %}Orange Circle{% else %}Blue Circle{% endif %}</span>
+                                <div>
+                                    <strong style="font-size: 15px; color: #1e40af;">{{ item.title }}</strong>
+                                    <span style="margin-left: 10px; padding: 3px 8px; background: #e0e7ff; color: #3730a3; border-radius: 12px; font-size: 11px; font-weight: 600;">{{ item.type }}</span>
+                                </div>
+                            </div>
+                            <div style="margin-left: 35px;">
+                                {% if item.documents %}
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: #dc2626; font-size: 13px;">Mandatory Documents ({{ item.documents|length }}):</strong>
+                                    <ul style="margin: 5px 0 0 20px; color: #374151; font-size: 13px;">
+                                        {% for d in item.documents %}
+                                        <li>{{ d }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                <div style="padding: 10px; background: #eff6ff; border-radius: 4px; margin-top: 10px; font-size: 12px;">
+                                    <strong>Owner:</strong> {{ item.owner }}<br>
+                                    <strong>System Action:</strong> {{ item.system_action }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-info" style="margin-top: 20px;">
+                        <strong>How the System Helps:</strong><br>
+                        • Automated email alerts sent to responsible teams<br>
+                        • Daily progress tracking and status updates<br>
+                        • Document upload notifications<br>
+                        • Deadline reminders at 7 days, 3 days, and 1 day before submission<br>
+                        • Management dashboard shows real-time tender readiness
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Section 7: Detailed Reasoning -->
+            <div class="section" data-section="7">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="section-icon">Detailed Analysis & Reasoning</span>
+                    </div>
+                    <span class="toggle-icon">Down Arrow</span>
+                </div>
+                <div class="section-content">
+                    <div class="reasoning-text">
+                        {{ reasoning_text | safe }}
+                    </div>
+                    
+                    {% if important_criteria_validation_required %}
+                    <div class="alert alert-warning" style="margin-top: 20px;">
+                        <strong>Manual Validation Required:</strong><br>
+                        <p style="margin: 8px 0 0 0; color: #78350f; font-size: 14px;">
+                            All <strong>IMPORTANT</strong> criteria require stakeholders' manual validation/approval before proceeding with the bid.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+    
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="expandAll()">Expand All Sections</button>
+            <button class="btn btn-secondary" onclick="collapseAll()">Collapse All Sections</button>
+            <button class="btn btn-secondary" onclick="window.print()">Print Report</button>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.section-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
+
+        function expandAll() {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('collapsed');
+            });
+        }
+
+        document.querySelectorAll('.tooltip-container').forEach(container => {
+            const tooltip = container.querySelector('.tooltip-text');
+            if (!tooltip) return;
+            let showTimeout, hideTimeout;
+            container.addEventListener('mouseenter', e => {
+                clearTimeout(hideTimeout);
+                showTimeout = setTimeout(() => {
+                    positionTooltip(container, tooltip, e);
+                    tooltip.classList.add('show');
+                }, 100);
+            });
+            container.addEventListener('mouseleave', () => {
+                clearTimeout(showTimeout);
+                hideTimeout = setTimeout(() => tooltip.classList.remove('show'), 100);
+            });
+            container.addEventListener('mousemove', e => {
+                if (tooltip.classList.contains('show')) {
+                    positionTooltip(container, tooltip, e);
+                }
+            });
+        });
+
+        function positionTooltip(container, tooltip, event) {
+            const rect = container.getBoundingClientRect();
+            const tooltipWidth = 500;
+            const tooltipHeight = Math.min(tooltip.scrollHeight + 24, 400);
+            const padding = 10;
+            let left = event.clientX - tooltipWidth / 2;
+            let top = rect.top - tooltipHeight - padding;
+            if (left < padding) left = padding;
+            if (left + tooltipWidth > window.innerWidth - padding) left = window.innerWidth - tooltipWidth - padding;
+            if (top < padding) top = rect.bottom + padding;
+            if (top + tooltipHeight > window.innerHeight - padding) top = window.innerHeight - tooltipHeight - padding;
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+    </script>
+</body>
+</html>
